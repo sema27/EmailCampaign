@@ -12,13 +12,7 @@ Bu doküman **EmailCampaign** projesinde kullanılan Dependency Injection yapıs
 
 ---
 
-## 2) Katmanlar ve Bağımlılık Yönü
-
-```
-Api & Worker  →  Application  →  Domain
-        ↘           ↑
-         Infrastructure
-```
+## 2) Katmanlar
 
 - **Domain:** Entity ve enum’lar  
 - **Application:** Servis arayüzleri, iş kuralları, DTO’lar  
