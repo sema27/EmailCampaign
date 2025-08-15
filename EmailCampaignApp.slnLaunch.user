@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "Yeni Profil",
+    "Projects": [
+      {
+        "Path": "EmailCampaign.Api\\EmailCampaign.Api.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "EmailCampaign.Worker\\EmailCampaign.Worker.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

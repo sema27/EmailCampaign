@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>EmailCampaign.Api</name>
+    </assembly>
+    <members>
+        <member name="M:EmailCampaign.Api.Controllers.StatsController.Get">
+            <summary>Genel kampanya istatistiklerini getirir.</summary>
+        </member>
+    </members>
+</doc>
