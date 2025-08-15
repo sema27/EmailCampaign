@@ -1,53 +1,86 @@
 # Dependency Injection (DI) – EmailCampaign
 
-Bu doküman EmailCampaign projesinde kullanılan **Dependency Injection** yapısını anlatır: temel kavramlar, yaşam döngüleri, projedeki kayıtlar ve katmanlar arası bağımlılık şeması.
+Bu doküman **EmailCampaign** projesinde kullanılan Dependency Injection yapısını ve temel mantığını açıklar.
 
-## 1) Neden DI?
-- **Gevşek bağlılık:** Sınıflar implementasyona değil **arayüzlere** bağımlı.
-- **Test edilebilirlik:** Mock/fake ile kolay test.
-- **Konfigürasyon ve yaşam döngüsü:** Servislerin ömrünü merkezi yönetme.
-- **Genişleyebilirlik:** Yeni implementasyonlar eklemek basit (örn. farklı e‑posta sağlayıcısı).
+---
 
-## 2) .NET’te DI kısaca
-```csharp
-// Kayıt
-builder.Services.AddScoped<IMyService, MyService>();
+## 1) Amaç
+- Katmanlar arası **gevşek bağlılık** sağlamak
+- Servisleri **arayüz** üzerinden enjekte ederek test edilebilirlik kazandırmak
+- Konfigürasyonları **Options Pattern** ile yönetmek
+- Uygulamanın **bakımını ve genişletilmesini** kolaylaştırmak
 
-// Kullanım
-public sealed class MyController(IMyService myService) : ControllerBase
-{
-    private readonly IMyService _myService = myService;
-}
+---
+
+## 2) Katmanlar ve Bağımlılık Yönü
 
 ```
+Api & Worker  →  Application  →  Domain
+        ↘           ↑
+         Infrastructure
+```
 
-.NET Core, DI desteğini yerleşik olarak sağlar.
-AddScoped, AddTransient, AddSingleton ile servis ömürleri belirlenir.
+- **Domain:** Entity ve enum’lar  
+- **Application:** Servis arayüzleri, iş kuralları, DTO’lar  
+- **Infrastructure:** EF Core, repository, RabbitMQ publisher implementasyonları  
+- **API/Worker:** Host uygulamalar, sadece Application arayüzlerini kullanır
 
-## 3) EmailCampaign Projesinde DI Kullanımı
-Projemiz 2 ana uygulamadan oluşuyor:
+---
 
-- **EmailCampaign.Api** → Kampanya CRUD + RabbitMQ kuyruğuna gönderim
-- **EmailCampaign.Worker** → Kuyruktan mesaj tüketip e-posta gönderimini simüle etme + veritabanına yazma
 
-Her iki uygulamada da DI şu amaçlarla kullanıldı:
+## 3) API’de DI Kayıt Örnekleri
 
-**API Katmanında**
-- ICampaignService → CampaignService
-- IGenericRepository<TEntity, TKey> → GenericRepository<TEntity, TKey>
-- IEventPublisher → MassTransitPublisher
-- Options Pattern ile RabbitMqOptions ve DatabaseOptions
+```csharp
+// Repository
+builder.Services.AddScoped(typeof(IGenericRepository<,>), typeof(EfRepositoryBase<,>));
 
-**Worker Katmanında**
-- IConsumer<SendEmailCommand> → SendEmailCommandConsumer
-- EF Core AppDbContext → Kampanya gönderim durumlarını güncellemek için
+// Servisler
+builder.Services.AddScoped<ICampaignService, CampaignService>();
+builder.Services.AddScoped<ICampaignSendService, CampaignSendService>();
+builder.Services.AddScoped<IStatsService, StatsService>();
 
-## 4) Avantajlar
-- **Katmanlar Arası Bağımsızlık:** Domain, Application, Infrastructure katmanları birbirinden kopuk çalışabilir.
-- **Kolay Test:** Her servis kolayca mocklanabilir.
-- **Kolay Konfigürasyon Değişikliği:** Örneğin RabbitMQ yerine başka bir kuyruk sistemi eklemek mümkün.
-- **Bakım Kolaylığı:** Tüm bağımlılıkların tek yerde yönetilmesi sayesinde projeye yeni geliştiricilerin adapte olması kolay.
+// Event Publisher
+builder.Services.AddScoped<IEventPublisher, MassTransitPublisher>();
 
-📄 Not:
-Bu dokümanın amacı, projedeki DI yapısının anlaşılmasını sağlamaktır.
-Kaynak kodun detayları için ilgili katmanların Program.cs dosyalarına bakabilirsiniz.
+// DbContext
+builder.Services.AddDbContext<AppDbContext>(opt =>
+    opt.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
+builder.Services.AddScoped<DbContext>(sp => sp.GetRequiredService<AppDbContext>());
+```
+
+---
+
+## 4) Worker’da DI Kayıt Örnekleri
+
+```csharp
+// Repository
+services.AddScoped(typeof(IGenericRepository<,>), typeof(EfRepositoryBase<,>));
+
+// Servisler
+services.AddScoped<ICampaignSendService, CampaignSendService>();
+
+// Consumer
+services.AddMassTransit(x =>
+{
+    x.AddConsumer<SendEmailCommandConsumer>();
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        cfg.ReceiveEndpoint("send-email-queue", e =>
+        {
+            e.ConfigureConsumer<SendEmailCommandConsumer>(context);
+        });
+    });
+});
+```
+
+---
+
+
+## 5) DI’nin Faydaları
+- **Test edilebilirlik:** Mock/fake servisler ile birim testi kolaydır.
+- **Bakım kolaylığı:** Implementasyon değişse bile arayüz sabit kalır.
+- **Genişletilebilirlik:** Yeni servis eklemek için sadece arayüz ve implementasyonu yazıp DI’a eklemek yeterlidir.
+- **Katman bağımsızlığı:** API ve Worker, Infrastructure implementasyonunu bilmez.
+
+---
+
