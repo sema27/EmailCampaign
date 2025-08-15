@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+	<OutputType>Exe</OutputType>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>dotnet-EmailCampaign.Worker-1d4b5fbd-01aa-4dd3-b012-72d9e4756d48</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+	<PackageReference Include="MassTransit" Version="8.5.1" />
+	<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.8" />
+	<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.8" />
+	<PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
+	<PackageReference Include="MassTransit.RabbitMQ" Version="8.5.1" />
+	<PackageReference Include="Microsoft.Graph" Version="5.89.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EmailCampaign.Application\EmailCampaign.Application.csproj" />
+    <ProjectReference Include="..\EmailCampaign.Infrastructure\EmailCampaign.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>
