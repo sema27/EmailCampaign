@@ -16,7 +16,6 @@ Proje **Clean Architecture** prensipleri ile tasarlanmıştır.
 ### Katmanlar:
 - **EmailCampaign.Domain**  
   - Temel entity sınıfları (`Campaign`, `CampaignStatus` vb.)
-  - İş kuralları ve domain modelleri
 - **EmailCampaign.Application**  
   - DTO'lar, servis arayüzleri, servis implementasyonları
   - Mapping profilleri (AutoMapper)
