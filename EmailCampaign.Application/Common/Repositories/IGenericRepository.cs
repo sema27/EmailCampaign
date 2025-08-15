@@ -1,4 +1,4 @@
-﻿namespace EmailCampaign.Domain.Repositories;
+﻿namespace EmailCampaign.Application.Common.Repositories;
 
 public interface IGenericRepository<TEntity, TKey> where TEntity : class
 {

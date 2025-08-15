@@ -1,4 +1,4 @@
-﻿using EmailCampaign.Domain.Repositories;
+﻿using EmailCampaign.Application.Common.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 public class GenericRepository<TEntity, TKey> : IGenericRepository<TEntity, TKey>

@@ -6,7 +6,7 @@ using EmailCampaign.Application.Campaigns.Enums;
 using EmailCampaign.Application.Campaigns.Messaging;
 using EmailCampaign.Application.Common.Abstractions;
 using EmailCampaign.Domain.Entities;
-using EmailCampaign.Domain.Repositories;
+using EmailCampaign.Application.Common.Repositories;
 using Microsoft.EntityFrameworkCore;
 namespace EmailCampaign.Application.Campaigns.Services;
 public sealed class CampaignService : ICampaignService

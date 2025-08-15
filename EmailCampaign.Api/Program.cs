@@ -6,8 +6,10 @@ using EmailCampaign.Application.Campaigns.Services;
 using EmailCampaign.Application.Common.Abstractions;
 using EmailCampaign.Application.Common.Options;
 using EmailCampaign.Application.Common.Options.Validation;
-using EmailCampaign.Domain.Repositories;
-using EmailCampaign.Infrastructure.Persistance;
+using EmailCampaign.Application.Common.Repositories;
+using EmailCampaign.Application.Stats.Services;
+using EmailCampaign.Infrastructure.Persistence;
+using EmailCampaign.Infrastructure.Persistence.Repositories;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using MassTransit;
@@ -77,8 +79,10 @@ builder.Services.AddDbContext<AppDbContext>((sp, opt) =>
 builder.Services.AddScoped<DbContext>(sp => sp.GetRequiredService<AppDbContext>());
 
 // ---- DI ----
-builder.Services.AddScoped(typeof(IGenericRepository<,>), typeof(GenericRepository<,>));
+builder.Services.AddScoped(typeof(IGenericRepository<,>), typeof(EfRepositoryBase<,>));
 builder.Services.AddScoped<ICampaignService, CampaignService>();
+builder.Services.AddScoped<IStatsService, StatsService>();
+builder.Services.AddScoped<ICampaignSendService, CampaignSendService>();
 builder.Services.AddScoped<IEventPublisher, MassTransitPublisher>();
 builder.Services.AddScoped<ICommandHandler<StartSendCampaignCommand, EnqueueResult>,
                           StartSendCampaignCommandHandler>();

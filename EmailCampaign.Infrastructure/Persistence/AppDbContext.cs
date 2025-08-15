@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 
-namespace EmailCampaign.Infrastructure.Persistance
+namespace EmailCampaign.Infrastructure.Persistence
 {
     public class AppDbContext : DbContext
     {

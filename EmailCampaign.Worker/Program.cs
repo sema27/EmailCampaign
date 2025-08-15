@@ -1,6 +1,9 @@
-using EmailCampaign.Application.Common.Options;
-using EmailCampaign.Application.Common.Options.Validation;
-using EmailCampaign.Infrastructure.Persistance;
+using EmailCampaign.Application.Campaigns.Services;            // ICampaignSendService, CampaignSendService
+using EmailCampaign.Application.Common.Options;                // DatabaseOptions, RabbitMqOptions
+using EmailCampaign.Application.Common.Options.Validation;     // Validatorlar
+using EmailCampaign.Application.Common.Repositories;           // IGenericRepository
+using EmailCampaign.Infrastructure.Persistence;                // AppDbContext  (sen klasörü 'Persistence' yaptýn)
+using EmailCampaign.Infrastructure.Persistence.Repositories;   // EfRepositoryBase
 using EmailCampaign.Worker.Consumers;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
@@ -9,7 +12,7 @@ using Microsoft.Extensions.Options;
 var builder = Host.CreateDefaultBuilder(args)
     .ConfigureServices((ctx, services) =>
     {
-        // Options
+        // --- Options (RabbitMQ + Database) ---
         services.AddOptions<RabbitMqOptions>()
             .Bind(ctx.Configuration.GetSection(RabbitMqOptions.SectionName))
             .ValidateOnStart();
@@ -20,14 +23,19 @@ var builder = Host.CreateDefaultBuilder(args)
             .ValidateOnStart();
         services.AddSingleton<IValidateOptions<DatabaseOptions>, DatabaseOptionsValidator>();
 
-        // DbContext
-        services.AddDbContext<AppDbContext>((sp, opt) =>
-        {
-            var db = sp.GetRequiredService<IOptions<DatabaseOptions>>().Value;
-            opt.UseSqlServer(db.Default);
-        });
+        // --- EF Core / DbContext ---
+        var conn = ctx.Configuration.GetConnectionString("Default");
+        services.AddDbContext<AppDbContext>(opt => opt.UseSqlServer(conn));
+        // Repository base'i DbContext üzerinden çalýþacaðý için DbContext'i de expose edelim
+        services.AddScoped<DbContext>(sp => sp.GetRequiredService<AppDbContext>());
 
-        // MassTransit + Consumer
+        // --- Repository implementasyonu ---
+        services.AddScoped(typeof(IGenericRepository<,>), typeof(EfRepositoryBase<,>));
+
+        // --- Application servisleri (Worker'ýn ihtiyacý) ---
+        services.AddScoped<ICampaignSendService, CampaignSendService>();
+
+        // --- MassTransit / Consumer ---
         services.AddMassTransit(x =>
         {
             x.AddConsumer<SendEmailCommandConsumer>();
@@ -35,6 +43,7 @@ var builder = Host.CreateDefaultBuilder(args)
             x.UsingRabbitMq((context, cfg) =>
             {
                 var mq = context.GetRequiredService<IOptions<RabbitMqOptions>>().Value;
+
                 cfg.Host(mq.Host, mq.VirtualHost, h =>
                 {
                     h.Username(mq.Username);
