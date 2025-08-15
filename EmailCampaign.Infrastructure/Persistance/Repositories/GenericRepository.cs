@@ -40,4 +40,5 @@ public class GenericRepository<TEntity, TKey> : IGenericRepository<TEntity, TKey
     {
         return await _context.Set<TEntity>().ToListAsync();
     }
+
 }
