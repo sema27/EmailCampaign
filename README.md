@@ -43,7 +43,7 @@ Proje **Clean Architecture** prensipleri ile tasarlanmıştır.
 - **AutoMapper** – DTO ↔ Entity dönüşümleri
 - **Swashbuckle** – Swagger dokümantasyonu
 - **Options Pattern** – Konfigürasyon yönetimi
-- 📄 [Dependency Injection (DI) Dokümanı](docs/DI.md)
+- 📄 [Dependency Injection (DI) Dokümanı](doc/DI.md)
 
 ---
 
