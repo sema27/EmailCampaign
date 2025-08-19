@@ -1,28 +1,28 @@
 # Dependency Injection (DI) – EmailCampaign
 
-Bu doküman **EmailCampaign** projesinde kullanılan Dependency Injection yapısını ve temel mantığını açıklar.
+This document explains the Dependency Injection structure and the main logic used in the EmailCampaign project.
 
 ---
 
-## 1) Amaç
-- Katmanlar arası **gevşek bağlılık** sağlamak
-- Servisleri **arayüz** üzerinden enjekte ederek test edilebilirlik kazandırmak
-- Konfigürasyonları **Options Pattern** ile yönetmek
-- Uygulamanın **bakımını ve genişletilmesini** kolaylaştırmak
+## 1) Purpose
+- Ensure loose coupling between layers
+- Inject services through interfaces to improve testability
+- Manage configurations with the Options Pattern
+- Make the application easier to maintain and extend
 
 ---
 
-## 2) Katmanlar
+## 2) Layers
 
-- **Domain:** Entity ve enum’lar  
-- **Application:** Servis arayüzleri, iş kuralları, DTO’lar  
-- **Infrastructure:** EF Core, repository, RabbitMQ publisher implementasyonları  
-- **API/Worker:** Host uygulamalar, sadece Application arayüzlerini kullanır
+- **Domain:** Entities and enums
+- **Application:** Service interfaces, business rules, DTOs
+- **Infrastructure:** EF Core, repositories, RabbitMQ publisher implementations
+- **API/Worker:** Host applications, use only Application interfaces
 
 ---
 
 
-## 3) API’de DI Kayıt Örnekleri
+## 3) DI Registration Examples in API
 
 ```csharp
 // Repository
@@ -44,7 +44,7 @@ builder.Services.AddScoped<DbContext>(sp => sp.GetRequiredService<AppDbContext>(
 
 ---
 
-## 4) Worker’da DI Kayıt Örnekleri
+## 4) DI Registration Examples in Worker
 
 ```csharp
 // Repository
@@ -70,11 +70,11 @@ services.AddMassTransit(x =>
 ---
 
 
-## 5) DI’nin Faydaları
-- **Test edilebilirlik:** Mock/fake servisler ile birim testi kolaydır.
-- **Bakım kolaylığı:** Implementasyon değişse bile arayüz sabit kalır.
-- **Genişletilebilirlik:** Yeni servis eklemek için sadece arayüz ve implementasyonu yazıp DI’a eklemek yeterlidir.
-- **Katman bağımsızlığı:** API ve Worker, Infrastructure implementasyonunu bilmez.
+## 5) Benefits of DI
+- **Testability:** Unit tests are easier with mock/fake services
+- **Maintainability:** Interfaces remain the same even if implementations change
+- **Extensibility:** To add a new service, just create the interface and implementation, then register it in DI
+- **Layer independence:** API and Worker do not need to know Infrastructure implementations
 
 ---
 
