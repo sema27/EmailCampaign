@@ -6,6 +6,7 @@ using EmailCampaign.Application.Campaigns.Services;
 using EmailCampaign.Application.Common.Abstractions;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace EmailCampaign.Api.Controllers;
 
@@ -26,46 +27,51 @@ public sealed class CampaignsController : ControllerBase
         _startSendHandler = startSendHandler;
     }
 
+    // POST api/v1/campaigns
     [HttpPost]
     [SwaggerOperation(
-        OperationId = "Campaign_Create",
+        OperationId = "Campaigns_Create",
         Summary = "Kampanya oluştur",
-        Description = "Ad, konu ve içerik ile yeni kampanya yaratır.")]
+        Description = "Ad, konu ve içerik ile yeni kampanya oluşturur.")]
     [ProducesResponseType(typeof(CampaignDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<CampaignDto>> Create([FromBody] CreateCampaignDto dto)
+    public async Task<ActionResult<CampaignDto>> Create(
+        [FromBody] CreateCampaignDto dto)
     {
         var created = await _campaignService.CreateAsync(dto);
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
+    // GET api/v1/campaigns/{id}
     [HttpGet("{id:guid}", Name = nameof(GetById))]
     [SwaggerOperation(
-        OperationId = "Campaign_GetById",
+        OperationId = "Campaigns_GetById",
         Summary = "Kampanya detayı",
         Description = "Kimliğe göre kampanya bilgisi getirir.")]
     [ProducesResponseType(typeof(CampaignDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<CampaignDto>> GetById(Guid id)
+    public async Task<ActionResult<CampaignDto>> GetById(
+        [FromRoute] Guid id)
     {
         var campaign = await _campaignService.GetByIdAsync(id);
         return campaign is null ? NotFound() : Ok(campaign);
     }
 
+    // GET api/v1/campaigns?page=1&pageSize=50
     [HttpGet]
     [SwaggerOperation(
-        OperationId = "Campaign_GetAll",
+        OperationId = "Campaigns_GetAll",
         Summary = "Kampanya listesi",
         Description = "Sayfa ve sayfa boyuna göre liste.")]
     [ProducesResponseType(typeof(IReadOnlyList<CampaignListItemDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<IReadOnlyList<CampaignListItemDto>>> GetAll(
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 50)
+        [FromQuery, Range(1, int.MaxValue, ErrorMessage = "page en az 1 olmalıdır.")]
+        int page = 1,
+        [FromQuery, Range(1, 200, ErrorMessage = "pageSize 1-200 arasında olmalıdır.")]
+        int pageSize = 50)
     {
-        if (page < 1) return ValidationProblem("page en az 1 olmalıdır.");
-        pageSize = Math.Clamp(pageSize, 1, 200);
-
+        // [ApiController] attribute'u ile model state invalid ise otomatik 400 döner.
         var campaigns = await _campaignService.GetAllAsync(page, pageSize);
 
         Response.Headers["X-Page"] = page.ToString();
@@ -74,46 +80,54 @@ public sealed class CampaignsController : ControllerBase
         return Ok(campaigns);
     }
 
+    // PUT api/v1/campaigns/{id}
     [HttpPut("{id:guid}")]
     [SwaggerOperation(
-        OperationId = "Campaign_Update",
+        OperationId = "Campaigns_Update",
         Summary = "Kampanyayı güncelle",
         Description = "Ad, konu veya içerikte değişiklik yapar. (Gönderilmeyen alanlar korunur)")]
     [ProducesResponseType(typeof(CampaignDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCampaignDto dto)
+    public async Task<ActionResult<CampaignDto>> Update(
+        [FromRoute] Guid id,
+        [FromBody] UpdateCampaignDto dto)
     {
-        var ok = await _campaignService.UpdateAsync(id, dto);
-        if (!ok) return NotFound();
+        // UpdateAsync muhtemelen Task<CampaignDto?> döndürüyor
+        var updated = await _campaignService.UpdateAsync(id, dto);
+        if (updated is null) return NotFound();
 
-        var fresh = await _campaignService.GetByIdAsync(id);
-        return Ok(fresh); 
+        return Ok(updated);
     }
 
+
+    // DELETE api/v1/campaigns/{id}
     [HttpDelete("{id:guid}")]
     [SwaggerOperation(
-        OperationId = "Campaign_Delete",
+        OperationId = "Campaigns_Delete",
         Summary = "Kampanyayı sil",
         Description = "Belirtilen kampanyayı kalıcı olarak siler.")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Delete(Guid id)
+    public async Task<IActionResult> Delete(
+        [FromRoute] Guid id)
     {
         var deleted = await _campaignService.DeleteAsync(id);
         return deleted ? NoContent() : NotFound();
     }
 
+    // POST api/v1/campaigns/{id}/send
     [HttpPost("{id:guid}/send")]
     [SwaggerOperation(
-        OperationId = "Campaign_Send",
+        OperationId = "Campaigns_Send",
         Summary = "Gönderimi başlat",
         Description = "Kampanyayı RabbitMQ kuyruğuna yazar (enqueue). İdempotent davranır.")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
-    [ProducesResponseType(StatusCodes.Status204NoContent)] // zaten Sent ise
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Send(Guid id)
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
+    public async Task<IActionResult> Send(
+        [FromRoute] Guid id)
     {
         var result = await _startSendHandler.Handle(new StartSendCampaignCommand(id));
 
@@ -122,19 +136,25 @@ public sealed class CampaignsController : ControllerBase
             EnqueueResult.NotFound => NotFound(),
             EnqueueResult.AlreadySent => NoContent(),
             EnqueueResult.Enqueued => Accepted(),
-            EnqueueResult.Failed => Problem(title: "Enqueue başarısız", statusCode: StatusCodes.Status400BadRequest),
-            _ => Problem(title: "Bilinmeyen durum", statusCode: StatusCodes.Status400BadRequest)
+            EnqueueResult.Failed => Problem(
+                                            title: "Kuyruğa yazma başarısız",
+                                            statusCode: StatusCodes.Status503ServiceUnavailable),
+            _ => Problem(
+                                            title: "Bilinmeyen durum",
+                                            statusCode: StatusCodes.Status500InternalServerError)
         };
     }
 
+    // GET api/v1/campaigns/{id}/report
     [HttpGet("{id:guid}/report")]
     [SwaggerOperation(
-        OperationId = "Campaign_GetReport",
+        OperationId = "Campaigns_GetReport",
         Summary = "Kampanya raporu",
-        Description = "Toplam gönderilen e‑posta sayısı ve kampanya durumu.")]
+        Description = "Toplam gönderilen e-posta sayısı ve kampanya durumu.")]
     [ProducesResponseType(typeof(CampaignReportDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<CampaignReportDto>> GetReport(Guid id)
+    public async Task<ActionResult<CampaignReportDto>> GetReport(
+        [FromRoute] Guid id)
     {
         var report = await _campaignService.GetReportAsync(id);
         return report is null ? NotFound() : Ok(report);

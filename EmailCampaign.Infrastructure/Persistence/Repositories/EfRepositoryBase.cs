@@ -23,7 +23,7 @@ public class EfRepositoryBase<TEntity, TKey> : IGenericRepository<TEntity, TKey>
     public async Task UpdateAsync(TEntity entity)
     {
         _dbSet.Update(entity);
-        await Task.CompletedTask;
+        await Task.CompletedTask;//entity dön
     }
 
     public async Task DeleteAsync(TEntity entity)

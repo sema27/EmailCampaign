@@ -2,7 +2,7 @@
 
 namespace EmailCampaign.Application.Stats.Services;
 
-public interface IStatsService
+public interface IStatisticsService
 {
-    Task<StatsDto> GetAsync();
+    Task<StatisticsSummaryDto> GetAsync();
 }

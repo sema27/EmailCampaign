@@ -20,3 +20,4 @@ public sealed class CreateCampaignDtoValidator : AbstractValidator<CreateCampaig
             .MinimumLength(10).WithMessage("İçerik en az 10 karakter olmalıdır.");
     }
 }
+//magic str kaldırma

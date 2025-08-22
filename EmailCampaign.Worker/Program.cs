@@ -1,9 +1,9 @@
-using EmailCampaign.Application.Campaigns.Services;            // ICampaignSendService, CampaignSendService
-using EmailCampaign.Application.Common.Options;                // DatabaseOptions, RabbitMqOptions
-using EmailCampaign.Application.Common.Options.Validation;     // Validatorlar
-using EmailCampaign.Application.Common.Repositories;           // IGenericRepository
-using EmailCampaign.Infrastructure.Persistence;                // AppDbContext  (sen klasörü 'Persistence' yaptýn)
-using EmailCampaign.Infrastructure.Persistence.Repositories;   // EfRepositoryBase
+using EmailCampaign.Application.Campaigns.Services;         
+using EmailCampaign.Application.Common.Options;               
+using EmailCampaign.Application.Common.Options.Validation;     
+using EmailCampaign.Application.Common.Repositories;         
+using EmailCampaign.Infrastructure.Persistence;                
+using EmailCampaign.Infrastructure.Persistence.Repositories;  
 using EmailCampaign.Worker.Consumers;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
@@ -26,6 +26,7 @@ var builder = Host.CreateDefaultBuilder(args)
         // --- EF Core / DbContext ---
         var conn = ctx.Configuration.GetConnectionString("Default");
         services.AddDbContext<AppDbContext>(opt => opt.UseSqlServer(conn));
+
         // Repository base'i DbContext üzerinden çalýþacaðý için DbContext'i de expose edelim
         services.AddScoped<DbContext>(sp => sp.GetRequiredService<AppDbContext>());
 

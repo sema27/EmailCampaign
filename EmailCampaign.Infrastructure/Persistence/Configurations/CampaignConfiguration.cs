@@ -26,3 +26,4 @@ public class CampaignConfiguration : IEntityTypeConfiguration<Campaign>
                .IsRequired(false);
     }
 }
+//custom metot bak

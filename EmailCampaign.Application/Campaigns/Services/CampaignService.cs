@@ -43,28 +43,29 @@ public sealed class CampaignService : ICampaignService
             .OrderByDescending(x => x.SentAt ?? x.CreatedAt)
             .Skip(skip)
             .Take(pageSize)
-            .ProjectTo<CampaignListItemDto>(_mapper.ConfigurationProvider)
+            .ProjectTo<CampaignListItemDto>(_mapper.ConfigurationProvider) //araştır
             .ToListAsync();
         return items;
     }
-    public async Task<bool> UpdateAsync(Guid id, UpdateCampaignDto dto)
+    public async Task<CampaignDto?> UpdateAsync(Guid id, UpdateCampaignDto dto)
     {
         var entity = await _repository.GetByIdAsync(id);
-        if (entity is null) return false;
+        if (entity is null) return null;
 
-        _mapper.Map(dto, entity);       // yalnıza null olmayanlar uygulanır
+        _mapper.Map(dto, entity);
         await _repository.SaveChangesAsync();
-        return true;
+        return _mapper.Map<CampaignDto>(entity);  
     }
+
 
     public async Task<bool> DeleteAsync(Guid id)
     {
-        var entity = await _repository.GetByIdAsync(id);
-        if (entity is null) return false;
+        var entity = await _repository.GetByIdAsync(id); //getbyid private metoda taşı, çok yerde kullanılıyor çünkü
+        if (entity is null) return false; //kullanıcı anlamaz exception kullan
         await _repository.DeleteAsync(entity);
         await _repository.SaveChangesAsync();
         return true;
-    }
+    } 
 
     public async Task<EnqueueResult> EnqueueSendAsync(Guid id)
     {
@@ -72,21 +73,38 @@ public sealed class CampaignService : ICampaignService
         if (entity is null)
             return EnqueueResult.NotFound;
 
+        // Zaten gönderilmişse kuyruğa tekrar alınmaz
         if (entity.Status == CampaignStatus.Sent)
             return EnqueueResult.AlreadySent;
 
-        var msg = _mapper.Map<SendEmailCommand>(entity);
+        // Draft veya Scheduled ise kuyruğa al
+        if (entity.Status is CampaignStatus.Draft or CampaignStatus.Scheduled)
+        {
+            // Idempotent: daha önce hiç set edilmediyse zamanı yaz
+            if (entity.ScheduledAt is null)
+                entity.ScheduledAt = DateTime.UtcNow;
 
-        try
-        {
-            await _publisher.PublishAsync(msg);
-            return EnqueueResult.Enqueued;
+            entity.Status = CampaignStatus.Scheduled;
+
+            // DB’de status + scheduledAt güncellensin
+            await _repository.SaveChangesAsync();
+
+            // Mesajı oluşturup kuyruğa yayınla
+            var msg = _mapper.Map<SendEmailCommand>(entity);
+            try
+            {
+                await _publisher.PublishAsync(msg);
+                return EnqueueResult.Enqueued;
+            }
+            catch
+            {
+                return EnqueueResult.Failed;
+            }
         }
-        catch
-        {
-            return EnqueueResult.Failed;
-        }
-    }
+
+        return EnqueueResult.Failed;
+    } //command sent edilir, event publish farkına bak, dönüş türleri
+
 
     public async Task<CampaignReportDto?> GetReportAsync(Guid id)
     {

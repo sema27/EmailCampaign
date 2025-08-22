@@ -1,6 +1,6 @@
 ﻿namespace EmailCampaign.Application.Stats.Dtos;
 
-public sealed record StatsDto(
+public sealed record StatisticsSummaryDto(
     int TotalCampaigns,       
     int Draft,             
     int Scheduled,          

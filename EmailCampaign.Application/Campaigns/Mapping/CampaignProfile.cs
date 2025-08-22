@@ -16,13 +16,13 @@ public sealed class CampaignProfile : Profile
             .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
 
         CreateMap<Campaign, CampaignDto>()
-            .ForMember(d => d.Status, o => o.MapFrom(s => MapStatus(s.Status)));
+            .ForMember(d => d.Status, o => o.MapFrom(s => (CampaignStatusDto)s.Status));
 
         CreateMap<Campaign, CampaignListItemDto>()
-            .ForMember(d => d.Status, o => o.MapFrom(s => MapStatus(s.Status)));
+            .ForMember(d => d.Status, o => o.MapFrom(s => (CampaignStatusDto)s.Status));
 
         CreateMap<Campaign, CampaignReportDto>()
-            .ForMember(d => d.Status, o => o.MapFrom(s => MapStatus(s.Status)));
+            .ForMember(d => d.Status, o => o.MapFrom(s => (CampaignStatusDto)s.Status));
 
         CreateMap<Campaign, SendEmailCommand>()
             .ForMember(d => d.CampaignId, o => o.MapFrom(s => s.Id));
